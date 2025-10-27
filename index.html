@@ -8,6 +8,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.2.0/remixicon.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+    
     <style>
         :root, .dark-theme {
             --main-bg: #1e1e1e;
@@ -24,6 +33,9 @@
             --file-html-color: #e37933; 
             --file-js-color: #f7e018; 
             --file-css-color: #31a8ff; 
+            /* STATUS BAR COLORS */
+            --status-bar-bg: #007acc; 
+            --status-bar-text: #ffffff;
         }
 
         .light-theme {
@@ -41,6 +53,9 @@
             --file-html-color: #e37933;
             --file-js-color: #f7e018;
             --file-css-color: #31a8ff;
+            /* STATUS BAR COLORS */
+            --status-bar-bg: #dddddd; 
+            --status-bar-text: #333333;
         }
 
         .vs-app-bg { background-color: var(--main-bg); }
@@ -53,6 +68,8 @@
         .vs-header-text { color: var(--header-text); }
         .vs-border { border-color: var(--border-color); }
         .vs-contrast-bg { background-color: var(--contrast-bg); }
+        /* STATUS BAR CLASS */
+        .vs-status-bar { background-color: var(--status-bar-bg); color: var(--status-bar-text); }
 
         html, body { height: 100%; }
         .hidden { display: none; }
@@ -70,101 +87,130 @@
             background-color: var(--sidebar-bg);
             transition: background-color 0.15s;
         }
+        
+        .CodeMirror {
+            height: 100% !important;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 14px; 
+        }
+        .cm-s-material-darker.CodeMirror {
+            background-color: var(--main-bg);
+        }
+        .cm-s-default.CodeMirror {
+            background-color: var(--main-bg);
+        }
     </style>
 </head>
-<body class="dark-theme vs-app-bg min-h-screen w-screen m-0 p-0 overflow-hidden flex font-sans vs-text-color text-sm" style="font-size: 14px;">
+<body class="dark-theme vs-app-bg min-h-screen w-screen m-0 p-0 overflow-hidden flex flex-col font-sans vs-text-color text-sm" style="font-size: 14px;">
     
     <input type="file" id="folder-picker" style="display: none;" webkitdirectory directory>
 
-    <div class="flex h-full">
-        <div class="w-12 vs-sidebar flex flex-col items-center py-2 border-r vs-border">
-            <i id="file-icon" class="ri-file-text-line ri-xl p-2 vs-icon-color vs-menu-hover rounded-md mb-2 cursor-pointer"></i>
-            <i id="search-icon" class="ri-search-line ri-xl p-2 vs-text-color vs-menu-hover rounded-md mb-2 cursor-pointer"></i>
-            
-            <div class="flex-grow"></div> 
-            
-            <i id="download-project-icon" class="ri-download-2-line ri-xl p-2 vs-text-color vs-menu-hover rounded-md mb-2 cursor-pointer" title="Download Project as .zip"></i>
-            <i id="settings-icon" class="ri-settings-4-line ri-xl p-2 vs-text-color vs-menu-hover rounded-md mt-auto cursor-pointer"></i> 
-        </div>
-
-        <div class="w-64 vs-sidebar p-3 flex flex-col border-r vs-border">
-            <h2 class="uppercase text-xs font-bold vs-text-color mb-3 opacity-60">Explorer</h2>
-            
-            <div id="project-dropdown" class="space-y-2">
-                <div id="project-default-header">
-                    <div class="flex items-center vs-text-color vs-menu-hover rounded-md p-1 opacity-80">
-                        <i id="project-default-toggle" class="ri-arrow-down-s-line text-lg"></i>
-                        <span class="ml-1">PROJECT</span>
-                    </div>
-                    <div id="no-folder-message" class="vs-text-color opacity-80 mt-4 text-center text-xs">
-                        No folder open.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="main-content-container" class="flex-grow flex flex-col h-full">
-
-        <div id="header-bar" class="vs-sidebar flex items-center p-1 border-b vs-border">
-            <div class="flex-grow flex justify-center py-1 px-4">
-                <div class="w-full vs-contrast-bg rounded-md flex items-center px-4 py-1">
-                    <i class="ri-search-line vs-text-color opacity-70 mr-2"></i>
-                    <input type="text" id="header-search-input" placeholder="Search" class="bg-transparent vs-text-color text-sm w-full focus:outline-none placeholder-vs-text-color placeholder-opacity-70">
-                </div>
-            </div>
-        </div>
-
-        <div id="editor-tab-bar" class="vs-sidebar flex items-end border-b vs-border h-9 overflow-x-auto">
-        </div>
-
-        <div id="content-wrapper" class="flex-grow relative">
-            <div id="welcome-screen" class="content-view p-12 h-full overflow-y-auto">
-                <div id="start-page-content" class="grid grid-cols-1 gap-16">
-                    <div>
-                        <h2 class="text-2xl font-normal vs-header-text mb-6">Start</h2>
-                        <div class="space-y-2 mb-10 text-base">
-                            <div id="open-link" class="flex items-center space-x-3 p-2 rounded-md vs-menu-hover vs-link-color cursor-pointer">
-                                <i class="ri-folder-open-line"></i>
-                                <span>Open Folder...</span>
-                            </div>
-                        </div>
-
-                        <h2 class="text-2xl font-normal vs-header-text mb-6">Recent</h2>
-                        <div id="recent-projects-container" class="vs-text-color opacity-80 space-y-2">
-                            <p>No recent folders.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="editor-screen" class="content-view hidden h-full w-full">
-                <textarea id="editor-content-area" class="w-full h-full vs-app-bg p-4 font-mono text-sm vs-text-color resize-none focus:outline-none"></textarea>
-            </div>
-            
-            <div id="settings-screen" class="content-view hidden flex-grow p-12 h-full">
-                <h2 class="text-3xl font-light vs-header-text mb-8 border-b vs-border pb-4">Application Settings</h2>
-                <p class="text-lg vs-text-color opacity-70 mb-6">Customize your Vixo environment.</p>
+    <!-- MAIN APP AREA (Sidebar + Editor) -->
+    <div class="flex flex-grow overflow-hidden"> 
+        <div class="flex h-full flex-shrink-0">
+            <div class="w-12 vs-sidebar flex flex-col items-center py-2 border-r vs-border h-full flex-shrink-0">
+                <i id="file-icon" class="ri-file-text-line ri-xl p-2 vs-icon-color vs-menu-hover rounded-md mb-2 cursor-pointer"></i>
+                <i id="search-icon" class="ri-search-line ri-xl p-2 vs-text-color vs-menu-hover rounded-md mb-2 cursor-pointer"></i>
                 
-                <div class="space-y-4">
-                    <div class="p-4 vs-contrast-bg rounded-md flex justify-between items-center">
-                        <span id="theme-label" class="vs-header-text">Theme: Dark Mode (Default)</span>
-                        <button id="change-theme-btn" class="bg-gray-600 hover:bg-gray-700 vs-header-text py-1 px-3 rounded-md text-sm transition duration-150">
-                            Change Theme
-                        </button>
-                    </div>
-                    <div class="p-4 vs-contrast-bg rounded-md flex justify-between items-center">
-                        <span id="font-size-label" class="vs-header-text">Font Size: Medium (14px)</span>
-                        <button id="adjust-font-btn" class="bg-gray-600 hover:bg-gray-700 vs-header-text py-1 px-3 rounded-md text-sm transition duration-150">
-                            Adjust Font
-                        </button>
+                <div class="flex-grow"></div> 
+                
+                <i id="download-project-icon" class="ri-download-2-line ri-xl p-2 vs-text-color vs-menu-hover rounded-md mb-2 cursor-pointer" title="Download Project as .zip"></i>
+                <i id="settings-icon" class="ri-settings-4-line ri-xl p-2 vs-text-color vs-menu-hover rounded-md mt-auto cursor-pointer"></i> 
+            </div>
+
+            <div class="w-64 vs-sidebar p-3 flex flex-col border-r vs-border h-full flex-shrink-0">
+                <h2 class="uppercase text-xs font-bold vs-text-color mb-3 opacity-60 flex-shrink-0">Explorer</h2>
+                
+                <div id="project-dropdown" class="space-y-2 flex-grow overflow-y-auto">
+                    <div id="project-default-header">
+                        <div class="flex items-center vs-text-color vs-menu-hover rounded-md p-1 opacity-80">
+                            <i id="project-default-toggle" class="ri-arrow-down-s-line text-lg"></i>
+                            <span class="ml-1">PROJECT</span>
+                        </div>
+                        <div id="no-folder-message" class="vs-text-color opacity-80 mt-4 text-center text-xs">
+                            No folder open.
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
+        <div id="main-content-container" class="flex-grow flex flex-col h-full overflow-hidden">
+
+            <div id="header-bar" class="vs-sidebar flex items-center p-1 border-b vs-border flex-shrink-0">
+                <div class="flex-grow flex justify-center py-1 px-4">
+                    <div class="w-full vs-contrast-bg rounded-md flex items-center px-4 py-1">
+                        <i class="ri-search-line vs-text-color opacity-70 mr-2"></i>
+                        <input type="text" id="header-search-input" placeholder="Search" class="bg-transparent vs-text-color text-sm w-full focus:outline-none placeholder-vs-text-color placeholder-opacity-70">
+                    </div>
+                </div>
+            </div>
+
+            <div id="editor-tab-bar" class="vs-sidebar flex items-end border-b vs-border h-9 overflow-x-auto flex-shrink-0">
+            </div>
+
+            <div id="content-wrapper" class="flex-grow relative overflow-hidden">
+                <div id="welcome-screen" class="content-view p-12 h-full w-full overflow-y-auto absolute inset-0">
+                    <div id="start-page-content" class="grid grid-cols-1 gap-16">
+                        <div>
+                            <h2 class="text-2xl font-normal vs-header-text mb-6">Start</h2>
+                            <div class="space-y-2 mb-10 text-base">
+                                <div id="open-link" class="flex items-center space-x-3 p-2 rounded-md vs-menu-hover vs-link-color cursor-pointer">
+                                    <i class="ri-folder-open-line"></i>
+                                    <span>Open Folder...</span>
+                                </div>
+                            </div>
+
+                            <h2 class="text-2xl font-normal vs-header-text mb-6">Recent</h2>
+                            <div id="recent-projects-container" class="vs-text-color opacity-80 space-y-2">
+                                <p>No recent folders.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="editor-screen" class="content-view hidden h-full w-full overflow-hidden absolute inset-0">
+                    <textarea id="editor-content-area" class="w-full h-full vs-app-bg p-4 font-mono text-sm vs-text-color resize-none focus:outline-none"></textarea>
+                </div>
+                
+                <div id="settings-screen" class="content-view hidden flex-grow p-12 h-full w-full overflow-y-auto absolute inset-0">
+                    <h2 class="text-3xl font-light vs-header-text mb-8 border-b vs-border pb-4">Application Settings</h2>
+                    <p class="text-lg vs-text-color opacity-70 mb-6">Customize your Vixo environment.</p>
+                    
+                    <div class="space-y-4">
+                        <div class="p-4 vs-contrast-bg rounded-md flex justify-between items-center">
+                            <span id="theme-label" class="vs-header-text">Theme: Dark Mode (Default)</span>
+                            <button id="change-theme-btn" class="bg-gray-600 hover:bg-gray-700 vs-header-text py-1 px-3 rounded-md text-sm transition duration-150">
+                                Change Theme
+                            </button>
+                        </div>
+                        <div class="p-4 vs-contrast-bg rounded-md flex justify-between items-center">
+                            <span id="font-size-label" class="vs-header-text">Font Size: Medium (14px)</span>
+                            <button id="adjust-font-btn" class="bg-gray-600 hover:bg-gray-700 vs-header-text py-1 px-3 rounded-md text-sm transition duration-150">
+                                Adjust Font
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
     </div>
     
+    <!-- Status Bar -->
+    <div id="status-bar" class="vs-status-bar h-6 flex items-center justify-between px-4 text-xs flex-shrink-0 border-t vs-border">
+        <!-- Left Side (Line/Col Info) -->
+        <div class="flex items-center space-x-3">
+            <i class="ri-code-s-slash-line text-sm mr-1"></i>
+            <span id="line-col-display" class="opacity-80">Line 1, Col 1</span>
+        </div>
+        <!-- Right Side (Preview Button) -->
+        <div class="flex items-center space-x-4">
+            <!-- The 'hidden' class will be managed by JavaScript -->
+            <span id="preview-btn" class="font-semibold cursor-pointer hover:underline">Preview</span>
+        </div>
+    </div>
+
     <div id="delete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
         <div class="vs-sidebar p-6 rounded-lg shadow-2xl w-96 border vs-border">
             <h3 class="text-xl vs-header-text mb-4">Confirm Deletion</h3>
@@ -217,8 +263,9 @@
         let recentProjects = [];
         let isProjectExpanded = true;
         let activeFileInDrag = null; 
-        
         let itemToDelete = { name: null, type: null }; 
+        
+        let codeEditorInstance = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             const fileIcon = document.getElementById('file-icon');
@@ -239,6 +286,69 @@
             const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
             const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
             
+            const previewBtn = document.getElementById('preview-btn');
+            const lineColDisplay = document.getElementById('line-col-display');
+            
+            
+            const saveCurrentContent = () => {
+                if (currentFile !== 'Welcome' && currentFile !== 'Settings' && projectFiles[currentFile] !== undefined) {
+                    if (codeEditorInstance) {
+                        projectFiles[currentFile] = codeEditorInstance.getValue();
+                    }
+                }
+            };
+            
+            const isWebFile = (fileName) => {
+                if (fileName === 'Welcome' || fileName === 'Settings') return false;
+                const ext = fileName.split('.').pop().toLowerCase();
+                // Check if it's HTML, JS, or CSS
+                return ['html', 'htm', 'js', 'css'].includes(ext);
+            };
+
+            const updateStatusBar = (fileName) => {
+                // 1. Update Line/Col display
+                if (codeEditorInstance && fileName !== 'Welcome' && fileName !== 'Settings') {
+                    // Update cursor position only if the editor is active
+                    const cursor = codeEditorInstance.getCursor();
+                    if (lineColDisplay) lineColDisplay.textContent = `Line ${cursor.line + 1}, Col ${cursor.ch}`;
+                } else if (fileName === 'Welcome') {
+                    if (lineColDisplay) lineColDisplay.textContent = 'Welcome Screen';
+                } else if (fileName === 'Settings') {
+                    if (lineColDisplay) lineColDisplay.textContent = 'Settings View';
+                }
+                
+                // 2. Update Preview button visibility (based on user request)
+                if (isWebFile(fileName)) {
+                    previewBtn.classList.remove('hidden');
+                } else {
+                    previewBtn.classList.add('hidden');
+                }
+            };
+
+            const previewHtml = () => {
+                saveCurrentContent(); // Ensure current editor content is saved
+
+                if (!currentFile.toLowerCase().endsWith('.html')) {
+                    console.warn(`Cannot preview: "${currentFile}" is not an HTML file and cannot be rendered directly in a new tab.`);
+                    return;
+                }
+
+                if (projectFiles[currentFile] === undefined) {
+                    console.error('File content not found.');
+                    return;
+                }
+
+                const htmlContent = projectFiles[currentFile];
+                
+                const previewWindow = window.open('', '_blank');
+                if (previewWindow) {
+                    previewWindow.document.write(htmlContent);
+                    previewWindow.document.close();
+                } else {
+                    console.error('Failed to open preview window. Check your popup blocker settings.');
+                }
+            };
+
             const switchView = (targetId) => {
                 document.querySelectorAll('.content-view').forEach(view => {
                     view.classList.add('hidden');
@@ -285,6 +395,20 @@
                     iconColor = 'var(--file-js-color)'; 
                 }
                 return { iconClass, iconColor };
+            };
+            
+            const getCodeMirrorMode = (fileName) => {
+                const fileExtension = fileName.split('.').pop().toLowerCase();
+                if (fileExtension === 'js' || fileExtension === 'ts') {
+                    return 'javascript';
+                } else if (fileExtension === 'css') {
+                    return 'css';
+                } else if (fileExtension === 'html' || fileExtension === 'htm') {
+                    return 'htmlmixed';
+                } else if (fileExtension === 'xml') {
+                    return 'xml';
+                }
+                return 'text/plain';
             };
 
             const loadProject = (folderName) => {
@@ -374,7 +498,7 @@
                             <i class="ri-folder-open-line ri-sm" style="color: var(--link-color);"></i>
                             <span class="opacity-90 text-xs">${folderName}</span>
                         </div>
-                        <div class="folder-content pl-3 space-y-1 ${isExpanded ? '' : 'hidden'}" data-folder-content="${folderName}">${filesHTML}</div>
+                        <div class="folder-content pl-3 space-y-1 ${isExpanded ? 'active' : 'hidden'}" data-folder-content="${folderName}">${filesHTML}</div>
                     </div>
                 `;
             };
@@ -582,30 +706,6 @@
                 itemToDelete.type = null;
                 deleteModal.classList.add('hidden');
             };
-
-            cancelDeleteBtn.addEventListener('click', hideDeleteModal);
-            
-            confirmDeleteBtn.addEventListener('click', () => {
-                if (itemToDelete.name && itemToDelete.type) {
-                    if (itemToDelete.type === 'File') {
-                        deleteFile(itemToDelete.name);
-                    } else if (itemToDelete.type === 'Folder') {
-                        deleteFolder(itemToDelete.name);
-                    }
-                    hideDeleteModal();
-                }
-            });
-
-
-            openLink.addEventListener('click', () => { folderPicker.click(); });
-            folderPicker.addEventListener('change', (e) => {
-                const files = e.target.files;
-                if (files.length > 0) {
-                    const path = files[0].webkitRelativePath;
-                    const folderName = path.split('/')[0].toUpperCase();
-                    loadProject(folderName);
-                }
-            });
             
             const renderRecentProjects = () => {
                 const recentContainer = document.getElementById('recent-projects-container');
@@ -753,11 +853,21 @@
                 
                 if (fileName === 'Welcome') {
                     switchView('welcome-screen');
+                    if (codeEditorInstance) codeEditorInstance.setValue('');
+                } else if (fileName === 'Settings') {
+                    // Note: Settings is not handled as a tab, but this prevents errors if it was manually added.
+                    switchView('settings-screen');
+                    if (codeEditorInstance) codeEditorInstance.setValue('');
                 } else {
                     switchView('editor-screen');
-                    editorContentArea.value = projectFiles[fileName] !== undefined ? projectFiles[fileName] : '';
-                    editorContentArea.focus();
+                    const mode = getCodeMirrorMode(fileName);
+                    codeEditorInstance.setOption('mode', mode);
+                    codeEditorInstance.setValue(projectFiles[fileName] !== undefined ? projectFiles[fileName] : '');
+                    codeEditorInstance.focus();
+                    setTimeout(() => codeEditorInstance.refresh(), 1); 
                 }
+                
+                updateStatusBar(currentFile); // Update status bar visibility and text
             };
             
             const closeFile = (fileName) => {
@@ -777,55 +887,9 @@
                 openFile('Welcome');
             };
             
-            const saveCurrentContent = () => {
-                if (currentFile !== 'Welcome' && projectFiles[currentFile] !== undefined) {
-                    projectFiles[currentFile] = editorContentArea.value;
-                }
-            };
-
-            editorContentArea.addEventListener('input', saveCurrentContent);
-            
-            fileIcon.addEventListener('click', () => {
-                if (currentFile === 'Welcome') {
-                    switchView('welcome-screen');
-                } else {
-                    switchView('editor-screen');
-                }
-            });
-            
-            settingsIcon.addEventListener('click', () => {
-                saveCurrentContent();
-                switchView('settings-screen');
-            });
-            
-            searchIcon.addEventListener('click', () => {
-                searchIcon.classList.add('vs-icon-highlight');
-                searchIcon.classList.remove('vs-text-color', 'opacity-80');
-                
-                headerSearchInput.focus();
-                headerSearchInput.select();
-            });
-
-            headerSearchInput.addEventListener('input', () => {
-                const query = headerSearchInput.value.trim().toLowerCase();
-                
-                if (query.length === 0) return;
-
-                const openMatch = openTabs.find(tab => tab.toLowerCase().includes(query));
-                if (openMatch) {
-                    openFile(openMatch);
-                    return;
-                }
-
-                const projectMatch = Object.keys(projectFiles).find(file => file.toLowerCase().includes(query));
-                if (projectMatch) {
-                    openFile(projectMatch);
-                }
-            });
-
             const downloadProjectAsZip = () => {
                 if (!currentProject) {
-                    alert('Please open a project folder first.');
+                    
                     return;
                 }
                 saveCurrentContent();
@@ -857,8 +921,6 @@
                     });
             };
 
-            downloadProjectIcon.addEventListener('click', downloadProjectAsZip);
-
             const appBody = document.querySelector('body'); 
             const themeLabel = document.getElementById('theme-label');
             const lightModeBtn = document.getElementById('light-mode-btn');
@@ -878,8 +940,10 @@
                 
                 if (theme === 'dark') {
                     themeLabel.textContent = 'Theme: Dark Mode (Default)';
+                    codeEditorInstance.setOption('theme', 'material-darker');
                 } else {
                     themeLabel.textContent = 'Theme: Light Mode (Active)';
+                    codeEditorInstance.setOption('theme', 'default');
                 }
                 
                 highlightActiveIcon(document.querySelector('.content-view:not(.hidden)').id);
@@ -895,6 +959,92 @@
             const showModal = (modalElement) => { modalElement.classList.remove('hidden'); };
             const hideModal = (modalElement) => { modalElement.classList.add('hidden'); };
             
+            
+            codeEditorInstance = CodeMirror.fromTextArea(editorContentArea, {
+                lineNumbers: true,
+                theme: 'material-darker',
+                mode: 'text/plain',
+                lineWrapping: true,
+                autofocus: true
+            });
+
+            // --- CodeMirror Listeners ---
+            codeEditorInstance.on('change', saveCurrentContent);
+            codeEditorInstance.on('cursorActivity', () => {
+                const cursor = codeEditorInstance.getCursor();
+                if (lineColDisplay && currentFile !== 'Welcome' && currentFile !== 'Settings') {
+                    lineColDisplay.textContent = `Line ${cursor.line + 1}, Col ${cursor.ch}`;
+                }
+            });
+            // --- End CodeMirror Listeners ---
+
+
+            cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+            
+            confirmDeleteBtn.addEventListener('click', () => {
+                if (itemToDelete.name && itemToDelete.type) {
+                    if (itemToDelete.type === 'File') {
+                        deleteFile(itemToDelete.name);
+                    } else if (itemToDelete.type === 'Folder') {
+                        deleteFolder(itemToDelete.name);
+                    }
+                    hideDeleteModal();
+                }
+            });
+
+            openLink.addEventListener('click', () => { folderPicker.click(); });
+            folderPicker.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    const path = files[0].webkitRelativePath;
+                    const folderName = path.split('/')[0].toUpperCase();
+                    loadProject(folderName);
+                }
+            });
+            
+            fileIcon.addEventListener('click', () => {
+                if (currentFile === 'Welcome') {
+                    switchView('welcome-screen');
+                } else {
+                    switchView('editor-screen');
+                }
+                updateStatusBar(currentFile);
+            });
+            
+            settingsIcon.addEventListener('click', () => {
+                saveCurrentContent();
+                switchView('settings-screen');
+                updateStatusBar('Settings'); // Manually update status bar for this view
+            });
+            
+            searchIcon.addEventListener('click', () => {
+                searchIcon.classList.add('vs-icon-highlight');
+                searchIcon.classList.remove('vs-text-color', 'opacity-80');
+                
+                headerSearchInput.focus();
+                headerSearchInput.select();
+            });
+
+            headerSearchInput.addEventListener('input', () => {
+                const query = headerSearchInput.value.trim().toLowerCase();
+                
+                if (query.length === 0) return;
+
+                const openMatch = openTabs.find(tab => tab.toLowerCase().includes(query));
+                if (openMatch) {
+                    openFile(openMatch);
+                    return;
+                }
+
+                const projectMatch = Object.keys(projectFiles).find(file => file.toLowerCase().includes(query));
+                if (projectMatch) {
+                    openFile(projectMatch);
+                }
+            });
+            
+            downloadProjectIcon.addEventListener('click', downloadProjectAsZip);
+            previewBtn.addEventListener('click', previewHtml); 
+            
             changeThemeBtn.addEventListener('click', () => { showModal(themeModal); });
             lightModeBtn.addEventListener('click', () => { toggleTheme('light'); hideModal(themeModal); });
             darkModeBtn.addEventListener('click', () => { toggleTheme('dark'); hideModal(themeModal); });
@@ -906,13 +1056,17 @@
             fontSlider.addEventListener('input', (e) => {
                 const newSize = e.target.value;
                 appBody.style.fontSize = `${newSize}px`; 
-                editorContentArea.style.fontSize = `${newSize}px`;
+                const cmElement = document.querySelector('.CodeMirror');
+                if (cmElement) cmElement.style.fontSize = `${newSize}px`;
                 fontSizeDisplay.textContent = `${newSize}px`;
                 updateFontSizeLabel(parseInt(newSize));
             });
             
             updateFontSizeLabel(parseInt(fontSlider.value));
             fontSizeDisplay.textContent = `${fontSlider.value}px`;
+            const cmElement = document.querySelector('.CodeMirror');
+            if (cmElement) cmElement.style.fontSize = `${fontSlider.value}px`;
+            
             toggleTheme('dark');
             openWelcomeTab();
             renderRecentProjects();
@@ -920,4 +1074,3 @@
     </script>
 </body>
 </html>
-
